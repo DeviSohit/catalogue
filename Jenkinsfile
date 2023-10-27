@@ -1,59 +1,16 @@
-pipeline {
-    agent { node { label 'AGENT-1' } } 
-    stages {
-        stage('Install Dependencies') {
-            steps {
-                sh 'npm install'
-            }
-        }
-        stage('Unit Test') {
-            steps {
-                echo "Unit testing is done here"
-            }
-        }
-        //sonar-scanner command expect sonar-project.properties should be available
-        // stage('Sonar Scan'){
-        //     steps {
-        //         sh 'ls -ltr'
-        //         sh 'sonar-scanner'
-        //     }
-        // }
-        stage('Build'){
-            steps {
-                sh 'ls -ltr'
-                sh 'zip -r catalogue.zip ./* --exclude=.git --exclude=.zip'
-            }
-        }
-        stage('Publish Artifact') {
-            steps {
-                nexusArtifactUploader(
-                    nexusVersion: 'nexus3',
-                    protocol: 'http',
-                    nexusUrl: '54.92.177.45:8081/',
-                    groupId: 'com.roboshop',
-                    version: '1.0.0',
-                    repository: 'catalogue',
-                    credentialsId: 'nexus-auth',
-                    artifacts: [
-                        [artifactId: 'catalogue',
-                        classifier: '',
-                        file: 'catalogue.zip',
-                        type: 'zip']
-                    ]
-                )
-            }
-        }
-        stage('Deploy'){
-            steps {
-                echo "Deployment"
-            }
-        }
-    }
-
-    post{
-        always{
-            echo 'cleaning up workspace'
-            deleteDir()
-        }
-    }
+#!groovy
+// it means the libraries will be downloaded and accessible at run time
+@Library('roboshop-shared-library') _ //Jenkins system configuration library name. There we referring from roboshop-shared-library repo
+def configMap = [
+    application: "nodeJSVM"
+    component: "catalogue"
+]
+env //printing the variable
+// this is .groovy file name and function inside it
+//if not master branch then only trigger pipeline
+if ( ! env.BRANCH_NAME.equalsIgnoreCase('master')){
+pipelineDecission.decidePipeline(configMap)
+}
+else{
+    echo "master PROD deployment should happen through CR"
 }
